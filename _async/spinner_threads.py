@@ -4,6 +4,29 @@ This program runs a script and displays a spinner '\|/' while the program is run
 - The spin() and slow() will run concurrently
 - The main thread-- The only thread when the program starts- will start a new thread to run spin() and slow()
 
+Program Flow:
+1. Initialization:
+    1.1 Event 'done' is instantiated
+    1.2 Thread 'spinner' is instantiated
+2. Start:
+    2.1 spinner thread is started. But the GIL is still held by main thread. So nothing happens
+    2.2 slow() makes the main thread sleep for 3 seconds.
+3. Main Thread sleeps. During this time:
+    3.1 GIL is passed to spinner thread. 
+    3.2 For loop:
+        i. char = one of {\,|,/}
+        ii. char is printed instantly
+        iii. done.set(0.1) makes the Event wait for 0.1s and then check if done.set() == True
+        iv. ...run loop again since done.wait() == False
+4. Main thread wakes up (time.sleep(3) finishes)
+    4.1 done.set() turns internal flag to True
+5. spinner.join() gives the GIL to the spinner thread.
+    5.1 Enter the for loop
+    5.2 Print char
+    5.3 done.wait() waits for 0.1s and then evaluates to True
+    5.4 break out of loop
+
+
 
 Additional info:
 - By design, there is no API for terminating a thread. You must send a message to shut down.
